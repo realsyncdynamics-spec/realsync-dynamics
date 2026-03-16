@@ -25,6 +25,7 @@ import SchulLaborPage from "@/pages/schullabor";
 import LinkMagicPage from "@/pages/link-magic";
 import BrandPage from "@/pages/brand";
 import StatusPage from "@/pages/status";
+import BildungPage from "@/pages/bildung";
 import NotFound from "@/pages/not-found";
 
 function AppRouter() {
@@ -50,6 +51,7 @@ function AppRouter() {
       "/link-magic": "Link-Magic — KI-Anzeigen-Generator | RealSync SaaS Plattform",
       "/brand": "Marke & Strategie — Brand Management | RealSync Dynamics",
       "/status": "Live Status Dashboard — Plattform-Transparenz | RealSync Dynamics",
+      "/bildung": "RealSync Bildung — Bundeslandübergreifende Schul- & Bildungsplattform | RealSync Dynamics",
     };
     document.title = titles[location] || "RealSync Dynamics";
   }, [location]);
@@ -75,6 +77,7 @@ function AppRouter() {
         <Route path="/link-magic" component={LinkMagicPage} />
         <Route path="/brand" component={BrandPage} />
         <Route path="/status" component={StatusPage} />
+        <Route path="/bildung" component={BildungPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

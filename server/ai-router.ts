@@ -327,7 +327,7 @@ class AIModelRouter {
           remainingCapacity: Math.max(0, m.rateLimit - m.currentUsage),
         };
       }),
-      providers: [...new Set(this.models.map((m) => m.provider))].map((p) => {
+      providers: Array.from(new Set(this.models.map((m) => m.provider))).map((p) => {
         const providerModels = this.models.filter((m) => m.provider === p);
         return {
           name: p,

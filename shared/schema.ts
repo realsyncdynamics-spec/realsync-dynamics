@@ -320,3 +320,268 @@ export const insertUploadSchema = createInsertSchema(uploads).pick({
 });
 export type InsertUpload = z.infer<typeof insertUploadSchema>;
 export type Upload = typeof uploads.$inferSelect;
+
+// ==========================================
+// REALSYNC BILDUNG — Bundeslandübergreifende Bildungsplattform
+// ==========================================
+
+// Schulen (Schools)
+export const schools = pgTable("schools", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  bundesland: text("bundesland").notNull(),
+  schultyp: text("schultyp").notNull(), // grundschule, hauptschule, realschule, gymnasium, gesamtschule, berufsschule, foerderschule
+  adresse: text("adresse"),
+  plz: text("plz"),
+  stadt: text("stadt"),
+  schulleitung: text("schulleitung"),
+  email: text("email"),
+  telefon: text("telefon"),
+  schuelerAnzahl: integer("schueler_anzahl").default(0),
+  lehrerAnzahl: integer("lehrer_anzahl").default(0),
+  digitalPaktStatus: text("digitalpakt_status").default("beantragt"), // beantragt, genehmigt, aktiv, abgelaufen
+  vidisEnabled: boolean("vidis_enabled").default(false),
+  schulcloudType: text("schulcloud_type"), // bayerncloud, schulcloud, mebis, logineo, iserv
+  plan: text("plan").default("free"), // free, basis, premium, enterprise
+  isActive: boolean("is_active").default(true),
+  createdAt: text("created_at"),
+});
+
+export const insertSchoolSchema = createInsertSchema(schools).pick({
+  name: true,
+  bundesland: true,
+  schultyp: true,
+  adresse: true,
+  plz: true,
+  stadt: true,
+  email: true,
+});
+export type InsertSchool = z.infer<typeof insertSchoolSchema>;
+export type School = typeof schools.$inferSelect;
+
+// Schüler-Profile (Student Profiles — pseudonymisiert, DSGVO)
+export const studentProfiles = pgTable("student_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  schoolId: varchar("school_id"),
+  pseudonym: text("pseudonym").notNull(), // DSGVO: kein Klarname
+  klasse: text("klasse"), // z.B. "7a", "10b"
+  jahrgang: integer("jahrgang"),
+  nfcTagId: text("nfc_tag_id"),
+  role: text("role").default("schueler"), // schueler, klassensprecher, schuelersprecher
+  isActive: boolean("is_active").default(true),
+  lastActive: text("last_active"),
+  createdAt: text("created_at"),
+});
+
+export const insertStudentSchema = createInsertSchema(studentProfiles).pick({
+  schoolId: true,
+  pseudonym: true,
+  klasse: true,
+  jahrgang: true,
+});
+export type InsertStudent = z.infer<typeof insertStudentSchema>;
+export type StudentProfile = typeof studentProfiles.$inferSelect;
+
+// Lehrer-Profile (Teacher Profiles)
+export const teacherProfiles = pgTable("teacher_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id"),
+  schoolId: varchar("school_id"),
+  faecher: text("faecher"), // JSON array: ["Mathematik", "Physik"]
+  rolle: text("rolle").default("lehrkraft"), // lehrkraft, fachleitung, schulleitung, admin
+  isActive: boolean("is_active").default(true),
+  createdAt: text("created_at"),
+});
+
+export const insertTeacherSchema = createInsertSchema(teacherProfiles).pick({
+  userId: true,
+  schoolId: true,
+  faecher: true,
+  rolle: true,
+});
+export type InsertTeacher = z.infer<typeof insertTeacherSchema>;
+export type TeacherProfile = typeof teacherProfiles.$inferSelect;
+
+// NFC Zugangspunkte (Access Points)
+export const accessPoints = pgTable("access_points", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  schoolId: varchar("school_id"),
+  name: text("name").notNull(), // z.B. "Haupteingang", "Chemielabor", "Bibliothek"
+  locationLat: text("location_lat"),
+  locationLng: text("location_lng"),
+  allowedRoles: text("allowed_roles"), // JSON: ["schueler", "lehrkraft"]
+  isActive: boolean("is_active").default(true),
+  createdAt: text("created_at"),
+});
+
+export const insertAccessPointSchema = createInsertSchema(accessPoints).pick({
+  schoolId: true,
+  name: true,
+  allowedRoles: true,
+});
+export type InsertAccessPoint = z.infer<typeof insertAccessPointSchema>;
+export type AccessPoint = typeof accessPoints.$inferSelect;
+
+// NFC Zugangslogs (Access Logs)
+export const accessLogs = pgTable("access_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id"),
+  accessPointId: varchar("access_point_id"),
+  schoolId: varchar("school_id"),
+  result: text("result").notNull(), // granted, denied
+  method: text("method").default("nfc"), // nfc, qr, pin
+  timestamp: text("timestamp"),
+});
+
+export const insertAccessLogSchema = createInsertSchema(accessLogs).pick({
+  studentId: true,
+  accessPointId: true,
+  schoolId: true,
+  result: true,
+  method: true,
+});
+export type InsertAccessLog = z.infer<typeof insertAccessLogSchema>;
+export type AccessLog = typeof accessLogs.$inferSelect;
+
+// Kurse / Lernmodule
+export const courses = pgTable("courses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  schoolId: varchar("school_id"),
+  teacherId: varchar("teacher_id"),
+  title: text("title").notNull(),
+  fach: text("fach").notNull(), // Mathematik, Deutsch, Englisch, Physik, Chemie, Biologie, Informatik, etc.
+  klasse: text("klasse"), // Zielklasse
+  bundesland: text("bundesland"),
+  lehrplanKonform: boolean("lehrplan_konform").default(true),
+  description: text("description"),
+  modulCount: integer("modul_count").default(0),
+  schuelerCount: integer("schueler_count").default(0),
+  status: text("status").default("entwurf"), // entwurf, aktiv, archiviert
+  createdAt: text("created_at"),
+});
+
+export const insertCourseSchema = createInsertSchema(courses).pick({
+  title: true,
+  fach: true,
+  klasse: true,
+  bundesland: true,
+  description: true,
+});
+export type InsertCourse = z.infer<typeof insertCourseSchema>;
+export type Course = typeof courses.$inferSelect;
+
+// Aufgaben / Hausaufgaben
+export const assignments = pgTable("assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  courseId: varchar("course_id"),
+  teacherId: varchar("teacher_id"),
+  title: text("title").notNull(),
+  description: text("description"),
+  typ: text("typ").default("hausaufgabe"), // hausaufgabe, klausur, projekt, quiz
+  dueDate: text("due_date"),
+  maxPunkte: integer("max_punkte").default(100),
+  abgaben: integer("abgaben").default(0),
+  status: text("status").default("offen"), // offen, geschlossen, bewertet
+  createdAt: text("created_at"),
+});
+
+export const insertAssignmentSchema = createInsertSchema(assignments).pick({
+  courseId: true,
+  title: true,
+  description: true,
+  typ: true,
+  dueDate: true,
+  maxPunkte: true,
+});
+export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
+export type Assignment = typeof assignments.$inferSelect;
+
+// Anwesenheit (Attendance)
+export const attendance = pgTable("attendance", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  studentId: varchar("student_id"),
+  courseId: varchar("course_id"),
+  schoolId: varchar("school_id"),
+  datum: text("datum").notNull(),
+  status: text("status").notNull(), // anwesend, abwesend, entschuldigt, verspaetet
+  methode: text("methode").default("manuell"), // manuell, nfc, qr
+  createdAt: text("created_at"),
+});
+
+export const insertAttendanceSchema = createInsertSchema(attendance).pick({
+  studentId: true,
+  courseId: true,
+  schoolId: true,
+  datum: true,
+  status: true,
+  methode: true,
+});
+export type InsertAttendance = z.infer<typeof insertAttendanceSchema>;
+export type Attendance = typeof attendance.$inferSelect;
+
+// Schulzahlungen (School Payments)
+export const schoolPayments = pgTable("school_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  schoolId: varchar("school_id"),
+  betrag: integer("betrag").notNull(), // in Cent
+  waehrung: text("waehrung").default("EUR"),
+  typ: text("typ").notNull(), // lizenz, digitalpakt, spende, elternbeitrag
+  status: text("status").default("offen"), // offen, bezahlt, storniert
+  stripeSessionId: text("stripe_session_id"),
+  beschreibung: text("beschreibung"),
+  createdAt: text("created_at"),
+});
+
+export const insertSchoolPaymentSchema = createInsertSchema(schoolPayments).pick({
+  schoolId: true,
+  betrag: true,
+  typ: true,
+  beschreibung: true,
+});
+export type InsertSchoolPayment = z.infer<typeof insertSchoolPaymentSchema>;
+export type SchoolPayment = typeof schoolPayments.$inferSelect;
+
+// DSGVO Audit-Log
+export const dsgvoAuditLogs = pgTable("dsgvo_audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  schoolId: varchar("school_id"),
+  aktion: text("aktion").notNull(), // datenzugriff, loeschung, export, avv_erstellt, einwilligung
+  betroffener: text("betroffener"), // pseudonymisiert
+  details: text("details"),
+  ipHash: text("ip_hash"), // gehashte IP
+  timestamp: text("timestamp"),
+});
+
+export const insertDsgvoLogSchema = createInsertSchema(dsgvoAuditLogs).pick({
+  schoolId: true,
+  aktion: true,
+  betroffener: true,
+  details: true,
+});
+export type InsertDsgvoLog = z.infer<typeof insertDsgvoLogSchema>;
+export type DsgvoAuditLog = typeof dsgvoAuditLogs.$inferSelect;
+
+// Stundenpläne (Timetables)
+export const timetables = pgTable("timetables", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  schoolId: varchar("school_id"),
+  klasse: text("klasse").notNull(),
+  tag: text("tag").notNull(), // montag, dienstag, mittwoch, donnerstag, freitag
+  stunde: integer("stunde").notNull(), // 1-10
+  fach: text("fach").notNull(),
+  raum: text("raum"),
+  lehrkraft: text("lehrkraft"),
+  createdAt: text("created_at"),
+});
+
+export const insertTimetableSchema = createInsertSchema(timetables).pick({
+  schoolId: true,
+  klasse: true,
+  tag: true,
+  stunde: true,
+  fach: true,
+  raum: true,
+  lehrkraft: true,
+});
+export type InsertTimetable = z.infer<typeof insertTimetableSchema>;
+export type Timetable = typeof timetables.$inferSelect;

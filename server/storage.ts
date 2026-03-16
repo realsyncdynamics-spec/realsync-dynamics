@@ -454,11 +454,11 @@ export class MemStorage implements IStorage {
 
     // Seed stories
     const storyItems: Story[] = [
-      { id: randomUUID(), userId: null, mediaUrl: null, caption: "Neues Projekt gestartet! Blockchain-Verifizierung für Creator 🔗", expiresAt: "2026-03-16T00:00:00Z", views: 234 },
-      { id: randomUUID(), userId: null, mediaUrl: null, caption: "Behind the Scenes: Unser neues Studio in Erfurt 🎬", expiresAt: "2026-03-16T00:00:00Z", views: 567 },
-      { id: randomUUID(), userId: null, mediaUrl: null, caption: "DSGVO-konformes Streaming ist endlich Realität! 🇪🇺", expiresAt: "2026-03-16T00:00:00Z", views: 891 },
-      { id: randomUUID(), userId: null, mediaUrl: null, caption: "Mein erstes C2PA-Zertifikat erhalten — so cool! 🏆", expiresAt: "2026-03-16T00:00:00Z", views: 345 },
-      { id: randomUUID(), userId: null, mediaUrl: null, caption: "Tipp: So schützt ihr eure Fotos mit unsichtbaren Wasserzeichen 💧", expiresAt: "2026-03-16T00:00:00Z", views: 1203 },
+      { id: randomUUID(), userId: null, authorName: "RealSync Team", mediaUrl: null, caption: "Neues Projekt gestartet! Blockchain-Verifizierung für Creator 🔗", expiresAt: "2026-03-16T00:00:00Z", views: 234 },
+      { id: randomUUID(), userId: null, authorName: "Dominik S.", mediaUrl: null, caption: "Behind the Scenes: Unser neues Studio in Erfurt 🎬", expiresAt: "2026-03-16T00:00:00Z", views: 567 },
+      { id: randomUUID(), userId: null, authorName: "Creator Max", mediaUrl: null, caption: "DSGVO-konformes Streaming ist endlich Realität! 🇪🇺", expiresAt: "2026-03-16T00:00:00Z", views: 891 },
+      { id: randomUUID(), userId: null, authorName: "Lisa K.", mediaUrl: null, caption: "Mein erstes C2PA-Zertifikat erhalten — so cool! 🏆", expiresAt: "2026-03-16T00:00:00Z", views: 345 },
+      { id: randomUUID(), userId: null, authorName: "FotoProfi", mediaUrl: null, caption: "Tipp: So schützt ihr eure Fotos mit unsichtbaren Wasserzeichen 💧", expiresAt: "2026-03-16T00:00:00Z", views: 1203 },
     ];
     for (const story of storyItems) {
       this.storiesMap.set(story.id, story);
@@ -742,6 +742,7 @@ export class MemStorage implements IStorage {
     const story: Story = {
       id,
       userId: null,
+      authorName: null,
       mediaUrl: insert.mediaUrl ?? null,
       caption: insert.caption ?? null,
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),

@@ -801,27 +801,32 @@ export default function BrandPage() {
           appName="Marke & Strategie"
           appDescription="Das zentrale Brand-Management-Center der RealSync Dynamics Plattform. RealSync Dynamics ist der Hub für alle RealSync Produkte (CreatorSeal, Optimus, Community, SchulLabor, Link-Magic). Hier findest du alles für eine konsistente Markenpräsenz — vom Brand Kit über Social-Media-Strategien bis hin zu fertigen Post-Templates."
           features={[
-            "Vollständiges Brand Kit mit Logo, Farben und Typografie",
-            "Reservierte Social-Media-Accounts auf 8 Plattformen",
-            "Wöchentlicher Content-Kalender mit Themen und Formaten",
-            "6 fertige Launch-Kampagne Post-Templates",
-            "Hashtag-Strategie mit Kern- und App-spezifischen Tags",
-            "Wachstumsstrategie Q1-Q4 2026 mit KPIs",
-            "Optimale Posting-Zeiten für den deutschen Markt",
-            "Content-Säulen mit prozentualer Gewichtung",
+            { icon: CheckCircle, title: "Brand Kit", description: "Vollständiges Brand Kit mit Logo, Farben und Typografie" },
+            { icon: Globe, title: "Social Accounts", description: "Reservierte Social-Media-Accounts auf 8 Plattformen" },
+            { icon: Clock, title: "Content-Kalender", description: "Wöchentlicher Content-Kalender mit Themen und Formaten" },
+            { icon: Layers, title: "Post-Templates", description: "6 fertige Launch-Kampagne Post-Templates" },
+            { icon: Target, title: "Hashtag-Strategie", description: "Hashtag-Strategie mit Kern- und App-spezifischen Tags" },
+            { icon: TrendingUp, title: "Wachstum", description: "Wachstumsstrategie Q1-Q4 2026 mit KPIs" },
+            { icon: Clock, title: "Posting-Zeiten", description: "Optimale Posting-Zeiten für den deutschen Markt" },
+            { icon: Star, title: "Content-Säulen", description: "Content-Säulen mit prozentualer Gewichtung" },
           ]}
-          techStack={["React", "Tailwind CSS", "Shadcn/UI", "Lucide Icons"]}
+          techStack={[
+            { name: "React", description: "Frontend-Framework" },
+            { name: "Tailwind CSS", description: "Utility-first CSS" },
+            { name: "Shadcn/UI", description: "UI-Komponenten" },
+            { name: "Lucide Icons", description: "Icon-Bibliothek" },
+          ]}
           stripeInfo={{
             plans: [
               { name: "Inklusive", price: "0€", features: ["Im Starter-Plan enthalten", "Voller Zugang zum Brand Kit", "Alle Templates nutzbar"] },
             ],
           }}
           roadmap={[
-            "Automatisierte Social-Media-Planung mit KI",
-            "Brand-Analytics Dashboard mit Engagement-Metriken",
-            "Multi-Marken-Management für Agenturen",
-            "Content-Generator mit KI-Texterstellung",
-            "A/B-Testing für Post-Varianten",
+            { quarter: "Q2 2026", title: "KI-Planung", description: "Automatisierte Social-Media-Planung mit KI", status: "planned" as const },
+            { quarter: "Q2 2026", title: "Brand-Analytics", description: "Dashboard mit Engagement-Metriken", status: "planned" as const },
+            { quarter: "Q3 2026", title: "Multi-Marken", description: "Multi-Marken-Management für Agenturen", status: "planned" as const },
+            { quarter: "Q3 2026", title: "Content-Generator", description: "KI-Texterstellung", status: "planned" as const },
+            { quarter: "Q4 2026", title: "A/B-Testing", description: "A/B-Testing für Post-Varianten", status: "planned" as const },
           ]}
         />
       </div>

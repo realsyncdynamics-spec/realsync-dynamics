@@ -51,6 +51,7 @@ import {
   Activity,
   Fingerprint,
   ScanSearch,
+  BookOpen,
 } from "lucide-react";
 
 const creatorSealDropdown = [
@@ -94,6 +95,7 @@ const pageNames: Record<string, string> = {
   "/link-magic": "Link-Magic",
   "/brand": "Marke & Strategie",
   "/status": "Live Status",
+  "/bildung": "RealSync Bildung",
 };
 
 function RealSyncLogo({ className }: { className?: string }) {
@@ -478,6 +480,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   }`}
                 >
                   Status
+                </button>
+              </Link>
+
+              {/* Bildung - direct link */}
+              <Link href="/bildung">
+                <button
+                  data-testid="nav-bildung"
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200 ${
+                    isActive("/bildung")
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  }`}
+                >
+                  Bildung
                 </button>
               </Link>
             </nav>
@@ -872,6 +888,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     Live Status
                   </button>
                 </Link>
+
+                {/* RealSync Bildung direct */}
+                <Link href="/bildung">
+                  <button
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive("/bildung")
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    <BookOpen className="h-3.5 w-3.5" />
+                    RealSync Bildung
+                  </button>
+                </Link>
               </nav>
             </div>
           </div>
@@ -914,6 +944,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <li><Link href="/support" className="hover:text-foreground transition-colors">KI-Support</Link></li>
                 <li><Link href="/brand" className="hover:text-foreground transition-colors">Marke & Strategie</Link></li>
                 <li><Link href="/status" className="hover:text-foreground transition-colors">Live Status</Link></li>
+                <li><Link href="/bildung" className="hover:text-foreground transition-colors">RealSync Bildung</Link></li>
               </ul>
             </div>
             <div>
