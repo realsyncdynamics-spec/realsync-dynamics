@@ -26,6 +26,16 @@ import {
   type InsertAgent,
   type AgentTask,
   type InsertTask,
+  type ScreenshotSubmission,
+  type InsertScreenshot,
+  type GrowthReward,
+  type InsertGrowthReward,
+  type ScreenshotDsgvoLog,
+  type InsertScreenshotDsgvoLog,
+  type Campaign,
+  type InsertCampaign,
+  type AutomationRule,
+  type InsertAutomationRule,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -92,6 +102,33 @@ export interface IStorage {
     planUsage: { used: number; limit: number };
     recentActivity: { type: string; title: string; time: string }[];
   }>;
+  // Screenshot-Agenten System
+  getScreenshots(filter?: { category?: string; status?: string }): Promise<ScreenshotSubmission[]>;
+  getScreenshot(id: string): Promise<ScreenshotSubmission | undefined>;
+  createScreenshot(data: InsertScreenshot): Promise<ScreenshotSubmission>;
+  updateScreenshot(id: string, data: Partial<ScreenshotSubmission>): Promise<ScreenshotSubmission | undefined>;
+  upvoteScreenshot(id: string): Promise<ScreenshotSubmission | undefined>;
+  // Growth Rewards
+  getGrowthRewards(): Promise<GrowthReward[]>;
+  getGrowthReward(userId: string): Promise<GrowthReward | undefined>;
+  createOrUpdateGrowthReward(data: InsertGrowthReward & { totalPoints?: number; screenshotsSubmitted?: number }): Promise<GrowthReward>;
+  getLeaderboard(limit?: number): Promise<GrowthReward[]>;
+  getGrowthStats(): Promise<{ totalUsers: number; totalScreenshots: number; implementedCount: number; gratisUnlocked: number; availableGratisSlots: number }>;
+  // DSGVO Logs
+  createDsgvoLog(log: InsertScreenshotDsgvoLog): Promise<ScreenshotDsgvoLog>;
+  getDsgvoLogs(userId?: string): Promise<ScreenshotDsgvoLog[]>;
+  // Campaigns
+  getCampaigns(filter?: { status?: string; platform?: string }): Promise<Campaign[]>;
+  getCampaign(id: string): Promise<Campaign | undefined>;
+  createCampaign(data: InsertCampaign): Promise<Campaign>;
+  updateCampaign(id: string, data: Partial<Campaign>): Promise<Campaign | undefined>;
+  deleteCampaign(id: string): Promise<boolean>;
+  getCampaignStats(): Promise<{ totalCampaigns: number; activeCampaigns: number; totalBudget: number; totalSpent: number; totalImpressions: number; totalClicks: number; totalConversions: number; avgCtr: string }>;
+  // Automation Rules
+  getAutomationRules(campaignId?: string): Promise<AutomationRule[]>;
+  createAutomationRule(data: InsertAutomationRule): Promise<AutomationRule>;
+  updateAutomationRule(id: string, data: Partial<AutomationRule>): Promise<AutomationRule | undefined>;
+  deleteAutomationRule(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -110,6 +147,11 @@ export class MemStorage implements IStorage {
   private uploadsMap: Map<string, Upload>;
   private agentsMap: Map<string, AIAgent>;
   private agentTasksMap: Map<string, AgentTask>;
+  private screenshotsMap: Map<string, ScreenshotSubmission>;
+  private growthRewardsMap: Map<string, GrowthReward>;
+  private dsgvoLogsMap: Map<string, ScreenshotDsgvoLog>;
+  private campaignsMap: Map<string, Campaign>;
+  private automationRulesMap: Map<string, AutomationRule>;
 
   constructor() {
     this.users = new Map();
@@ -127,6 +169,11 @@ export class MemStorage implements IStorage {
     this.uploadsMap = new Map();
     this.agentsMap = new Map();
     this.agentTasksMap = new Map();
+    this.screenshotsMap = new Map();
+    this.growthRewardsMap = new Map();
+    this.dsgvoLogsMap = new Map();
+    this.campaignsMap = new Map();
+    this.automationRulesMap = new Map();
     this.seedData();
   }
 
@@ -554,6 +601,316 @@ export class MemStorage implements IStorage {
     for (const upload of uploadItems) {
       this.uploadsMap.set(upload.id, upload);
     }
+
+    // Seed screenshot submissions
+    const screenshotItems: ScreenshotSubmission[] = [
+      {
+        id: randomUUID(),
+        userId: demoUserId,
+        userName: "Max Mustermann",
+        userEmail: "demo@realsync.de",
+        screenshotUrl: "data:image/png;base64,iVBORw0KGgo...",
+        category: "bug",
+        appTarget: "creatorseal",
+        description: "Barcode-Generator zeigt falsches Format bei langen Titeln an",
+        aiAnalysis: JSON.stringify({ detectedIssues: ["Textüberlauf im Barcode-Label"], suggestions: ["Max-Länge begrenzen"], confidence: 0.91, processingTime: "0.8s" }),
+        aiPriority: "high",
+        aiCategory: "ui-bug",
+        aiSuggestion: "CSS text-overflow: ellipsis hinzufügen und max-width setzen",
+        status: "implementiert",
+        implementedAt: "2026-03-10T14:00:00Z",
+        pointsAwarded: 50,
+        rewardTier: "gold",
+        consentGiven: true,
+        dataProcessingAgreed: true,
+        anonymized: false,
+        retentionExpiry: "2027-03-10T14:00:00Z",
+        isWettbewerb: false,
+        upvotes: 12,
+        createdAt: "2026-03-05T09:30:00Z",
+      },
+      {
+        id: randomUUID(),
+        userId: null,
+        userName: "Anna Schreiber",
+        userEmail: "anna@example.de",
+        screenshotUrl: "data:image/png;base64,screenshot2...",
+        category: "feature",
+        appTarget: "optimus",
+        description: "Dunkelmodus-Toggle fehlt in den Agenteneinstellungen",
+        aiAnalysis: JSON.stringify({ detectedIssues: ["Fehlende UI-Komponente"], suggestions: ["Toggle-Switch hinzufügen"], confidence: 0.85, processingTime: "1.1s" }),
+        aiPriority: "medium",
+        aiCategory: "feature-gap",
+        aiSuggestion: "Dark-Mode-Toggle in der Sidebar implementieren",
+        status: "in_bearbeitung",
+        implementedAt: null,
+        pointsAwarded: 30,
+        rewardTier: "silver",
+        consentGiven: true,
+        dataProcessingAgreed: true,
+        anonymized: false,
+        retentionExpiry: "2027-03-12T10:00:00Z",
+        isWettbewerb: true,
+        upvotes: 28,
+        createdAt: "2026-03-08T11:15:00Z",
+      },
+      {
+        id: randomUUID(),
+        userId: null,
+        userName: "Tim Fischer",
+        userEmail: "tim@example.de",
+        screenshotUrl: "data:image/png;base64,screenshot3...",
+        category: "ux",
+        appTarget: "builder",
+        description: "Template-Auswahl ist auf Mobilgeräten schwer bedienbar",
+        aiAnalysis: JSON.stringify({ detectedIssues: ["Touch-Target zu klein", "Scrollverhalten unnatürlich"], suggestions: ["Responsive Grid anpassen"], confidence: 0.78, processingTime: "1.4s" }),
+        aiPriority: "high",
+        aiCategory: "ux-improvement",
+        aiSuggestion: "Mindestgröße 44px für Touch-Targets, Swipe-Navigation einbauen",
+        status: "analysiert",
+        implementedAt: null,
+        pointsAwarded: 20,
+        rewardTier: "bronze",
+        consentGiven: true,
+        dataProcessingAgreed: true,
+        anonymized: false,
+        retentionExpiry: "2027-03-14T08:00:00Z",
+        isWettbewerb: false,
+        upvotes: 7,
+        createdAt: "2026-03-12T08:45:00Z",
+      },
+      {
+        id: randomUUID(),
+        userId: null,
+        userName: "Lena Weber",
+        userEmail: "lena@example.de",
+        screenshotUrl: "data:image/png;base64,screenshot4...",
+        category: "performance",
+        appTarget: "scanner",
+        description: "Market Scanner braucht über 5 Sekunden zum Laden der Trendanalyse",
+        aiAnalysis: JSON.stringify({ detectedIssues: ["Langsame API-Anfrage", "Kein Caching"], suggestions: ["Redis-Cache implementieren", "Lazy Loading"], confidence: 0.92, processingTime: "0.9s" }),
+        aiPriority: "critical",
+        aiCategory: "performance",
+        aiSuggestion: "API-Response cachen (TTL 5min), Skeleton-Loader hinzufügen",
+        status: "eingereicht",
+        implementedAt: null,
+        pointsAwarded: 10,
+        rewardTier: "bronze",
+        consentGiven: true,
+        dataProcessingAgreed: true,
+        anonymized: false,
+        retentionExpiry: "2027-03-15T16:00:00Z",
+        isWettbewerb: true,
+        upvotes: 34,
+        createdAt: "2026-03-14T16:20:00Z",
+      },
+      {
+        id: randomUUID(),
+        userId: null,
+        userName: "Sarah Klein",
+        userEmail: "sarah@example.de",
+        screenshotUrl: "data:image/png;base64,screenshot5...",
+        category: "wettbewerb",
+        appTarget: "community",
+        description: "Vorschlag: Gamification-Elemente für Community-Engagement (Badges, Streaks)",
+        aiAnalysis: JSON.stringify({ detectedIssues: [], suggestions: ["Badge-System implementieren", "Streak-Counter hinzufügen"], confidence: 0.88, processingTime: "1.0s" }),
+        aiPriority: "medium",
+        aiCategory: "feature-gap",
+        aiSuggestion: "Achievement-System mit 10 Badge-Stufen und täglichen Streaks",
+        status: "analysiert",
+        implementedAt: null,
+        pointsAwarded: 15,
+        rewardTier: "silver",
+        consentGiven: true,
+        dataProcessingAgreed: true,
+        anonymized: false,
+        retentionExpiry: "2027-03-16T12:00:00Z",
+        isWettbewerb: true,
+        upvotes: 45,
+        createdAt: "2026-03-15T12:00:00Z",
+      },
+    ];
+    for (const ss of screenshotItems) {
+      this.screenshotsMap.set(ss.id, ss);
+    }
+
+    // Seed growth rewards
+    const rewardItems: GrowthReward[] = [
+      {
+        id: randomUUID(),
+        userId: demoUserId,
+        userName: "Max Mustermann",
+        userEmail: "demo@realsync.de",
+        totalPoints: 150,
+        rank: 1,
+        tier: "gold",
+        screenshotsSubmitted: 8,
+        implementedCount: 3,
+        gratisPackageUnlocked: true,
+        gratisUnlockedAt: "2026-03-10T10:00:00Z",
+        createdAt: "2026-02-01T10:00:00Z",
+      },
+      {
+        id: randomUUID(),
+        userId: null,
+        userName: "Anna Schreiber",
+        userEmail: "anna@example.de",
+        totalPoints: 95,
+        rank: 2,
+        tier: "silver",
+        screenshotsSubmitted: 5,
+        implementedCount: 1,
+        gratisPackageUnlocked: false,
+        gratisUnlockedAt: null,
+        createdAt: "2026-02-15T10:00:00Z",
+      },
+      {
+        id: randomUUID(),
+        userId: null,
+        userName: "Tim Fischer",
+        userEmail: "tim@example.de",
+        totalPoints: 40,
+        rank: 3,
+        tier: "bronze",
+        screenshotsSubmitted: 3,
+        implementedCount: 0,
+        gratisPackageUnlocked: false,
+        gratisUnlockedAt: null,
+        createdAt: "2026-03-01T10:00:00Z",
+      },
+    ];
+    for (const reward of rewardItems) {
+      this.growthRewardsMap.set(reward.id, reward);
+    }
+
+    // Seed campaigns
+    const activeCampaignId = randomUUID();
+    const campaignItems: Campaign[] = [
+      {
+        id: activeCampaignId,
+        name: "CreatorSeal Launch Q1",
+        description: "Hauptkampagne für den CreatorSeal-Launch im DACH-Raum",
+        type: "social",
+        status: "aktiv",
+        platform: "instagram",
+        targetAudience: JSON.stringify({ altersgruppe: "18-35", interessen: ["Content Creation", "Digital Art", "Fotografie"], region: "DACH" }),
+        budget: 500000,
+        budgetSpent: 234500,
+        startDate: "2026-03-01",
+        endDate: "2026-03-31",
+        aiOptimized: true,
+        aiSuggestions: JSON.stringify({ headline: "Schütze deine Kreativität — mit Blockchain", timing: "Di/Do 10-12 CET", audience: "+15% Fotografen empfohlen" }),
+        abTestVariants: JSON.stringify({ A: "Schütze deine Inhalte", B: "Dein Content, dein Recht" }),
+        headline: "Schütze deine Kreativität — mit Blockchain-Verifizierung",
+        bodyText: "CreatorSeal schützt deine digitalen Inhalte mit SHA-256, C2PA und Blockchain. DSGVO-konform. Made in Germany.",
+        ctaText: "Jetzt kostenlos starten",
+        mediaUrls: JSON.stringify(["https://cdn.realsync.de/campaign/creatorseal-hero.png"]),
+        landingPageUrl: "https://realsyncdynamics.de/creatorseal",
+        schedule: JSON.stringify({ tage: ["Dienstag", "Donnerstag"], uhrzeit: "10:00" }),
+        timezone: "Europe/Berlin",
+        impressions: 145200,
+        clicks: 4356,
+        conversions: 312,
+        ctr: "3.0",
+        cpc: "0.54",
+        roas: "4.2",
+        createdAt: "2026-02-25T10:00:00Z",
+      },
+      {
+        id: randomUUID(),
+        name: "Optimus KI-Agenten Webinar",
+        description: "Webinar-Kampagne für die neuen KI-Agenten-Features",
+        type: "email",
+        status: "geplant",
+        platform: "email",
+        targetAudience: JSON.stringify({ altersgruppe: "25-45", interessen: ["KI", "Automatisierung", "SaaS"], region: "DACH" }),
+        budget: 150000,
+        budgetSpent: 0,
+        startDate: "2026-04-01",
+        endDate: "2026-04-15",
+        aiOptimized: false,
+        aiSuggestions: null,
+        abTestVariants: null,
+        headline: "KI-Agenten, die für dich arbeiten",
+        bodyText: "Entdecke die neuen KI-Agenten von RealSync Optimus. Content-Optimierung, SEO und Social Media — alles automatisch.",
+        ctaText: "Zum Webinar anmelden",
+        mediaUrls: null,
+        landingPageUrl: "https://realsyncdynamics.de/webinar",
+        schedule: null,
+        timezone: "Europe/Berlin",
+        impressions: 0,
+        clicks: 0,
+        conversions: 0,
+        ctr: null,
+        cpc: null,
+        roas: null,
+        createdAt: "2026-03-10T14:00:00Z",
+      },
+      {
+        id: randomUUID(),
+        name: "DigitalPakt Schulkampagne",
+        description: "Zielgruppe: Schulträger und Schulleitungen für RealSync Bildung",
+        type: "search",
+        status: "entwurf",
+        platform: "google",
+        targetAudience: JSON.stringify({ altersgruppe: "35-60", interessen: ["Bildung", "Digitalisierung", "Schulverwaltung"], region: "Deutschland" }),
+        budget: 300000,
+        budgetSpent: 0,
+        startDate: null,
+        endDate: null,
+        aiOptimized: false,
+        aiSuggestions: null,
+        abTestVariants: null,
+        headline: "Digitale Schule — einfach und DSGVO-konform",
+        bodyText: "RealSync Bildung: NFC-Zugang, Stundenplan, Anwesenheit und DigitalPakt-Förderung in einer Plattform.",
+        ctaText: "Kostenlos testen",
+        mediaUrls: null,
+        landingPageUrl: "https://realsyncdynamics.de/bildung",
+        schedule: null,
+        timezone: "Europe/Berlin",
+        impressions: 0,
+        clicks: 0,
+        conversions: 0,
+        ctr: null,
+        cpc: null,
+        roas: null,
+        createdAt: "2026-03-15T09:00:00Z",
+      },
+    ];
+    for (const campaign of campaignItems) {
+      this.campaignsMap.set(campaign.id, campaign);
+    }
+
+    // Seed automation rules for active campaign
+    const ruleItems: AutomationRule[] = [
+      {
+        id: randomUUID(),
+        campaignId: activeCampaignId,
+        name: "CTR-Warnung",
+        trigger: "ctr_below",
+        condition: JSON.stringify({ threshold: 1.5, unit: "percent" }),
+        action: "notify",
+        isActive: true,
+        lastTriggered: null,
+        triggerCount: 0,
+        createdAt: "2026-03-01T10:00:00Z",
+      },
+      {
+        id: randomUUID(),
+        campaignId: activeCampaignId,
+        name: "Budget-Schutz",
+        trigger: "budget_spent",
+        condition: JSON.stringify({ threshold: 90, unit: "percent" }),
+        action: "pause",
+        isActive: true,
+        lastTriggered: null,
+        triggerCount: 0,
+        createdAt: "2026-03-01T10:00:00Z",
+      },
+    ];
+    for (const rule of ruleItems) {
+      this.automationRulesMap.set(rule.id, rule);
+    }
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -961,6 +1318,277 @@ export class MemStorage implements IStorage {
     };
     this.users.set(id, updated);
     return updated;
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // ═══════ SCREENSHOT-AGENTEN & GROWTH SYSTEM ═══════════
+  // ═══════════════════════════════════════════════════════
+
+  async getScreenshots(filter?: { category?: string; status?: string }): Promise<ScreenshotSubmission[]> {
+    let items = Array.from(this.screenshotsMap.values());
+    if (filter?.category) items = items.filter((s) => s.category === filter.category);
+    if (filter?.status) items = items.filter((s) => s.status === filter.status);
+    return items.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  }
+
+  async getScreenshot(id: string): Promise<ScreenshotSubmission | undefined> {
+    return this.screenshotsMap.get(id);
+  }
+
+  async createScreenshot(data: InsertScreenshot): Promise<ScreenshotSubmission> {
+    const id = randomUUID();
+    const screenshot: ScreenshotSubmission = {
+      id,
+      userId: null,
+      userName: data.userName,
+      userEmail: data.userEmail ?? null,
+      screenshotUrl: data.screenshotUrl,
+      category: data.category,
+      appTarget: data.appTarget ?? null,
+      description: data.description ?? null,
+      aiAnalysis: null,
+      aiPriority: null,
+      aiCategory: null,
+      aiSuggestion: null,
+      status: "eingereicht",
+      implementedAt: null,
+      pointsAwarded: 0,
+      rewardTier: null,
+      consentGiven: data.consentGiven ?? false,
+      dataProcessingAgreed: data.dataProcessingAgreed ?? false,
+      anonymized: false,
+      retentionExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+      isWettbewerb: data.isWettbewerb ?? false,
+      upvotes: 0,
+      createdAt: new Date().toISOString(),
+    };
+    this.screenshotsMap.set(id, screenshot);
+    return screenshot;
+  }
+
+  async updateScreenshot(id: string, data: Partial<ScreenshotSubmission>): Promise<ScreenshotSubmission | undefined> {
+    const existing = this.screenshotsMap.get(id);
+    if (!existing) return undefined;
+    const updated: ScreenshotSubmission = { ...existing, ...data, id: existing.id };
+    this.screenshotsMap.set(id, updated);
+    return updated;
+  }
+
+  async upvoteScreenshot(id: string): Promise<ScreenshotSubmission | undefined> {
+    const existing = this.screenshotsMap.get(id);
+    if (!existing) return undefined;
+    const updated: ScreenshotSubmission = { ...existing, upvotes: (existing.upvotes ?? 0) + 1 };
+    this.screenshotsMap.set(id, updated);
+    return updated;
+  }
+
+  // Growth Rewards
+  async getGrowthRewards(): Promise<GrowthReward[]> {
+    return Array.from(this.growthRewardsMap.values());
+  }
+
+  async getGrowthReward(userId: string): Promise<GrowthReward | undefined> {
+    return Array.from(this.growthRewardsMap.values()).find((r) => r.userEmail === userId || r.userId === userId);
+  }
+
+  async createOrUpdateGrowthReward(data: InsertGrowthReward & { totalPoints?: number; screenshotsSubmitted?: number }): Promise<GrowthReward> {
+    const existing = Array.from(this.growthRewardsMap.values()).find((r) => r.userEmail === data.userEmail);
+    if (existing) {
+      const newPoints = (existing.totalPoints ?? 0) + (data.totalPoints ?? 10);
+      const newCount = (existing.screenshotsSubmitted ?? 0) + (data.screenshotsSubmitted ?? 1);
+      let tier = "starter";
+      if (newPoints >= 200) tier = "platinum";
+      else if (newPoints >= 100) tier = "gold";
+      else if (newPoints >= 50) tier = "silver";
+      else if (newPoints >= 20) tier = "bronze";
+      const gratisUnlocked = newPoints >= 100;
+      const updated: GrowthReward = {
+        ...existing,
+        totalPoints: newPoints,
+        screenshotsSubmitted: newCount,
+        tier,
+        gratisPackageUnlocked: gratisUnlocked,
+        gratisUnlockedAt: gratisUnlocked && !existing.gratisPackageUnlocked ? new Date().toISOString() : existing.gratisUnlockedAt,
+      };
+      this.growthRewardsMap.set(existing.id, updated);
+      return updated;
+    }
+    const id = randomUUID();
+    const reward: GrowthReward = {
+      id,
+      userId: null,
+      userName: data.userName,
+      userEmail: data.userEmail,
+      totalPoints: data.totalPoints ?? 10,
+      rank: 0,
+      tier: "starter",
+      screenshotsSubmitted: data.screenshotsSubmitted ?? 1,
+      implementedCount: 0,
+      gratisPackageUnlocked: false,
+      gratisUnlockedAt: null,
+      createdAt: new Date().toISOString(),
+    };
+    this.growthRewardsMap.set(id, reward);
+    return reward;
+  }
+
+  async getLeaderboard(limit?: number): Promise<GrowthReward[]> {
+    const all = Array.from(this.growthRewardsMap.values());
+    all.sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0));
+    // Assign ranks
+    all.forEach((r, i) => { r.rank = i + 1; });
+    return all.slice(0, limit ?? 50);
+  }
+
+  async getGrowthStats(): Promise<{ totalUsers: number; totalScreenshots: number; implementedCount: number; gratisUnlocked: number; availableGratisSlots: number }> {
+    const rewards = Array.from(this.growthRewardsMap.values());
+    const screenshots = Array.from(this.screenshotsMap.values());
+    const gratisCount = rewards.filter((r) => r.gratisPackageUnlocked).length;
+    return {
+      totalUsers: rewards.length,
+      totalScreenshots: screenshots.length,
+      implementedCount: screenshots.filter((s) => s.status === "implementiert").length,
+      gratisUnlocked: gratisCount,
+      availableGratisSlots: 1000 - gratisCount,
+    };
+  }
+
+  // DSGVO Logs
+  async createDsgvoLog(log: InsertScreenshotDsgvoLog): Promise<ScreenshotDsgvoLog> {
+    const id = randomUUID();
+    const entry: ScreenshotDsgvoLog = {
+      id,
+      action: log.action,
+      userId: log.userId ?? null,
+      screenshotId: log.screenshotId ?? null,
+      details: log.details ?? null,
+      ipHash: log.ipHash ?? null,
+      createdAt: new Date().toISOString(),
+    };
+    this.dsgvoLogsMap.set(id, entry);
+    return entry;
+  }
+
+  async getDsgvoLogs(userId?: string): Promise<ScreenshotDsgvoLog[]> {
+    let items = Array.from(this.dsgvoLogsMap.values());
+    if (userId) items = items.filter((l) => l.userId === userId);
+    return items.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // ═══════ WERBEKAMPAGNEN & AUTOMATISIERUNG ══════════════
+  // ═══════════════════════════════════════════════════════
+
+  async getCampaigns(filter?: { status?: string; platform?: string }): Promise<Campaign[]> {
+    let items = Array.from(this.campaignsMap.values());
+    if (filter?.status) items = items.filter((c) => c.status === filter.status);
+    if (filter?.platform) items = items.filter((c) => c.platform === filter.platform);
+    return items.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  }
+
+  async getCampaign(id: string): Promise<Campaign | undefined> {
+    return this.campaignsMap.get(id);
+  }
+
+  async createCampaign(data: InsertCampaign): Promise<Campaign> {
+    const id = randomUUID();
+    const campaign: Campaign = {
+      id,
+      name: data.name,
+      description: data.description ?? null,
+      type: data.type,
+      status: "entwurf",
+      platform: data.platform ?? null,
+      targetAudience: data.targetAudience ?? null,
+      budget: data.budget ?? 0,
+      budgetSpent: 0,
+      startDate: data.startDate ?? null,
+      endDate: data.endDate ?? null,
+      aiOptimized: false,
+      aiSuggestions: null,
+      abTestVariants: null,
+      headline: data.headline ?? null,
+      bodyText: data.bodyText ?? null,
+      ctaText: data.ctaText ?? null,
+      mediaUrls: data.mediaUrls ?? null,
+      landingPageUrl: data.landingPageUrl ?? null,
+      schedule: data.schedule ?? null,
+      timezone: "Europe/Berlin",
+      impressions: 0,
+      clicks: 0,
+      conversions: 0,
+      ctr: null,
+      cpc: null,
+      roas: null,
+      createdAt: new Date().toISOString(),
+    };
+    this.campaignsMap.set(id, campaign);
+    return campaign;
+  }
+
+  async updateCampaign(id: string, data: Partial<Campaign>): Promise<Campaign | undefined> {
+    const existing = this.campaignsMap.get(id);
+    if (!existing) return undefined;
+    const updated: Campaign = { ...existing, ...data, id: existing.id };
+    this.campaignsMap.set(id, updated);
+    return updated;
+  }
+
+  async deleteCampaign(id: string): Promise<boolean> {
+    return this.campaignsMap.delete(id);
+  }
+
+  async getCampaignStats(): Promise<{ totalCampaigns: number; activeCampaigns: number; totalBudget: number; totalSpent: number; totalImpressions: number; totalClicks: number; totalConversions: number; avgCtr: string }> {
+    const all = Array.from(this.campaignsMap.values());
+    const totalImpressions = all.reduce((sum, c) => sum + (c.impressions ?? 0), 0);
+    const totalClicks = all.reduce((sum, c) => sum + (c.clicks ?? 0), 0);
+    return {
+      totalCampaigns: all.length,
+      activeCampaigns: all.filter((c) => c.status === "aktiv").length,
+      totalBudget: all.reduce((sum, c) => sum + (c.budget ?? 0), 0),
+      totalSpent: all.reduce((sum, c) => sum + (c.budgetSpent ?? 0), 0),
+      totalImpressions,
+      totalClicks,
+      totalConversions: all.reduce((sum, c) => sum + (c.conversions ?? 0), 0),
+      avgCtr: totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : "0.00",
+    };
+  }
+
+  // Automation Rules
+  async getAutomationRules(campaignId?: string): Promise<AutomationRule[]> {
+    let items = Array.from(this.automationRulesMap.values());
+    if (campaignId) items = items.filter((r) => r.campaignId === campaignId);
+    return items;
+  }
+
+  async createAutomationRule(data: InsertAutomationRule): Promise<AutomationRule> {
+    const id = randomUUID();
+    const rule: AutomationRule = {
+      id,
+      campaignId: data.campaignId ?? null,
+      name: data.name,
+      trigger: data.trigger,
+      condition: data.condition,
+      action: data.action,
+      isActive: true,
+      lastTriggered: null,
+      triggerCount: 0,
+      createdAt: new Date().toISOString(),
+    };
+    this.automationRulesMap.set(id, rule);
+    return rule;
+  }
+
+  async updateAutomationRule(id: string, data: Partial<AutomationRule>): Promise<AutomationRule | undefined> {
+    const existing = this.automationRulesMap.get(id);
+    if (!existing) return undefined;
+    const updated: AutomationRule = { ...existing, ...data, id: existing.id };
+    this.automationRulesMap.set(id, updated);
+    return updated;
+  }
+
+  async deleteAutomationRule(id: string): Promise<boolean> {
+    return this.automationRulesMap.delete(id);
   }
 
   async getUserStats(userId: string): Promise<{

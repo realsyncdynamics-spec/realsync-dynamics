@@ -585,3 +585,179 @@ export const insertTimetableSchema = createInsertSchema(timetables).pick({
 });
 export type InsertTimetable = z.infer<typeof insertTimetableSchema>;
 export type Timetable = typeof timetables.$inferSelect;
+
+// ═══════════════════════════════════════════════════
+// Screenshot-Agenten & Growth System
+// ═══════════════════════════════════════════════════
+
+// Screenshot Submissions
+export const screenshotSubmissions = pgTable("screenshot_submissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id"),
+  userName: text("user_name").notNull(),
+  userEmail: text("user_email"),
+  screenshotUrl: text("screenshot_url").notNull(), // base64 or URL reference
+  category: text("category").notNull(), // 'bug', 'feature', 'ux', 'performance', 'wettbewerb'
+  appTarget: text("app_target"), // which RealSync app this relates to
+  description: text("description"),
+  // KI-Analyse Results
+  aiAnalysis: text("ai_analysis"), // JSON: detected issues, suggestions, priority
+  aiPriority: text("ai_priority"), // 'critical', 'high', 'medium', 'low'
+  aiCategory: text("ai_category"), // auto-detected: 'ui-bug', 'feature-gap', 'ux-improvement', 'performance', 'design'
+  aiSuggestion: text("ai_suggestion"), // automated fix/improvement suggestion
+  // Status tracking
+  status: text("status").notNull().default("eingereicht"), // eingereicht, analysiert, in_bearbeitung, implementiert, abgelehnt
+  implementedAt: text("implemented_at"),
+  // Rewards
+  pointsAwarded: integer("points_awarded").default(0),
+  rewardTier: text("reward_tier"), // 'bronze', 'silver', 'gold', 'platinum'
+  // DSGVO compliance
+  consentGiven: boolean("consent_given").notNull().default(false),
+  dataProcessingAgreed: boolean("data_processing_agreed").notNull().default(false),
+  anonymized: boolean("anonymized").default(false),
+  retentionExpiry: text("retention_expiry"), // auto-delete date per DSGVO
+  // Competition
+  isWettbewerb: boolean("is_wettbewerb").default(false),
+  upvotes: integer("upvotes").default(0),
+  createdAt: text("created_at"),
+});
+
+export const insertScreenshotSchema = createInsertSchema(screenshotSubmissions).pick({
+  userName: true,
+  userEmail: true,
+  screenshotUrl: true,
+  category: true,
+  appTarget: true,
+  description: true,
+  consentGiven: true,
+  dataProcessingAgreed: true,
+  isWettbewerb: true,
+});
+export type InsertScreenshot = z.infer<typeof insertScreenshotSchema>;
+export type ScreenshotSubmission = typeof screenshotSubmissions.$inferSelect;
+
+// Growth Rewards / Gratis-Paket Tracker
+export const growthRewards = pgTable("growth_rewards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id"),
+  userName: text("user_name").notNull(),
+  userEmail: text("user_email").notNull(),
+  totalPoints: integer("total_points").default(0),
+  rank: integer("rank").default(0),
+  tier: text("tier").notNull().default("starter"), // starter, bronze, silver, gold, platinum, all_in_gratis
+  screenshotsSubmitted: integer("screenshots_submitted").default(0),
+  implementedCount: integer("implemented_count").default(0),
+  gratisPackageUnlocked: boolean("gratis_package_unlocked").default(false),
+  gratisUnlockedAt: text("gratis_unlocked_at"),
+  createdAt: text("created_at"),
+});
+
+export const insertGrowthRewardSchema = createInsertSchema(growthRewards).pick({
+  userName: true,
+  userEmail: true,
+});
+export type InsertGrowthReward = z.infer<typeof insertGrowthRewardSchema>;
+export type GrowthReward = typeof growthRewards.$inferSelect;
+
+// DSGVO Audit Log for Screenshot System
+export const screenshotDsgvoLogs = pgTable("screenshot_dsgvo_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  action: text("action").notNull(), // 'consent', 'upload', 'analysis', 'deletion', 'anonymization', 'export'
+  userId: varchar("user_id"),
+  screenshotId: varchar("screenshot_id"),
+  details: text("details"),
+  ipHash: text("ip_hash"), // hashed IP for audit without storing PII
+  createdAt: text("created_at"),
+});
+
+export const insertScreenshotDsgvoLogSchema = createInsertSchema(screenshotDsgvoLogs).pick({
+  action: true,
+  userId: true,
+  screenshotId: true,
+  details: true,
+  ipHash: true,
+});
+export type InsertScreenshotDsgvoLog = z.infer<typeof insertScreenshotDsgvoLogSchema>;
+export type ScreenshotDsgvoLog = typeof screenshotDsgvoLogs.$inferSelect;
+
+// ═══════════════════════════════════════════════════
+// Werbekampagnen & Automatisierung
+// ═══════════════════════════════════════════════════
+
+export const campaigns = pgTable("campaigns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // 'social', 'email', 'display', 'search', 'influencer', 'retargeting'
+  status: text("status").notNull().default("entwurf"), // entwurf, geplant, aktiv, pausiert, abgeschlossen
+  platform: text("platform"), // 'instagram', 'tiktok', 'linkedin', 'google', 'facebook', 'youtube', 'email'
+  targetAudience: text("target_audience"), // JSON: demographics, interests, behavior
+  budget: integer("budget").default(0), // in cents
+  budgetSpent: integer("budget_spent").default(0),
+  startDate: text("start_date"),
+  endDate: text("end_date"),
+  // KI-Automatisierung
+  aiOptimized: boolean("ai_optimized").default(false),
+  aiSuggestions: text("ai_suggestions"), // JSON: auto-generated improvements
+  abTestVariants: text("ab_test_variants"), // JSON: A/B test configs
+  // Content
+  headline: text("headline"),
+  bodyText: text("body_text"),
+  ctaText: text("cta_text"),
+  mediaUrls: text("media_urls"), // JSON array
+  landingPageUrl: text("landing_page_url"),
+  // Scheduling
+  schedule: text("schedule"), // JSON: posting times, frequency
+  timezone: text("timezone").default("Europe/Berlin"),
+  // Metrics
+  impressions: integer("impressions").default(0),
+  clicks: integer("clicks").default(0),
+  conversions: integer("conversions").default(0),
+  ctr: text("ctr"), // click-through rate
+  cpc: text("cpc"), // cost per click
+  roas: text("roas"), // return on ad spend
+  createdAt: text("created_at"),
+});
+
+export const insertCampaignSchema = createInsertSchema(campaigns).pick({
+  name: true,
+  description: true,
+  type: true,
+  platform: true,
+  targetAudience: true,
+  budget: true,
+  startDate: true,
+  endDate: true,
+  headline: true,
+  bodyText: true,
+  ctaText: true,
+  mediaUrls: true,
+  landingPageUrl: true,
+  schedule: true,
+});
+export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
+export type Campaign = typeof campaigns.$inferSelect;
+
+// Ad Automation Rules
+export const automationRules = pgTable("automation_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  campaignId: varchar("campaign_id"),
+  name: text("name").notNull(),
+  trigger: text("trigger").notNull(), // 'ctr_below', 'budget_spent', 'time_based', 'engagement_drop', 'conversion_spike'
+  condition: text("condition").notNull(), // JSON: threshold values
+  action: text("action").notNull(), // 'pause', 'increase_budget', 'decrease_budget', 'change_audience', 'notify', 'duplicate'
+  isActive: boolean("is_active").default(true),
+  lastTriggered: text("last_triggered"),
+  triggerCount: integer("trigger_count").default(0),
+  createdAt: text("created_at"),
+});
+
+export const insertAutomationRuleSchema = createInsertSchema(automationRules).pick({
+  campaignId: true,
+  name: true,
+  trigger: true,
+  condition: true,
+  action: true,
+});
+export type InsertAutomationRule = z.infer<typeof insertAutomationRuleSchema>;
+export type AutomationRule = typeof automationRules.$inferSelect;

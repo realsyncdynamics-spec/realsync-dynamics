@@ -96,6 +96,8 @@ const pageNames: Record<string, string> = {
   "/brand": "Marke & Strategie",
   "/status": "Live Status",
   "/bildung": "RealSync Bildung",
+  "/agenten": "Screenshot-Agenten",
+  "/kampagnen": "Kampagnen",
 };
 
 function RealSyncLogo({ className }: { className?: string }) {
@@ -494,6 +496,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   }`}
                 >
                   Bildung
+                </button>
+              </Link>
+
+              {/* Agenten - direct link */}
+              <Link href="/agenten">
+                <button
+                  data-testid="nav-agenten"
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200 ${
+                    isActive("/agenten")
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  }`}
+                >
+                  Agenten
+                </button>
+              </Link>
+
+              {/* Kampagnen - direct link */}
+              <Link href="/kampagnen">
+                <button
+                  data-testid="nav-kampagnen"
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200 ${
+                    isActive("/kampagnen")
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  }`}
+                >
+                  Kampagnen
                 </button>
               </Link>
             </nav>
@@ -902,6 +932,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     RealSync Bildung
                   </button>
                 </Link>
+
+                {/* Screenshot-Agenten */}
+                <Link href="/agenten">
+                  <button
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive("/agenten")
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    <ScanSearch className="h-3.5 w-3.5" />
+                    Screenshot-Agenten
+                  </button>
+                </Link>
+
+                {/* Kampagnen */}
+                <Link href="/kampagnen">
+                  <button
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      isActive("/kampagnen")
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    <Megaphone className="h-3.5 w-3.5" />
+                    Kampagnen
+                  </button>
+                </Link>
               </nav>
             </div>
           </div>
@@ -945,6 +1003,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <li><Link href="/brand" className="hover:text-foreground transition-colors">Marke & Strategie</Link></li>
                 <li><Link href="/status" className="hover:text-foreground transition-colors">Live Status</Link></li>
                 <li><Link href="/bildung" className="hover:text-foreground transition-colors">RealSync Bildung</Link></li>
+                <li><Link href="/agenten" className="hover:text-foreground transition-colors">Screenshot-Agenten</Link></li>
+                <li><Link href="/kampagnen" className="hover:text-foreground transition-colors">Kampagnen</Link></li>
               </ul>
             </div>
             <div>

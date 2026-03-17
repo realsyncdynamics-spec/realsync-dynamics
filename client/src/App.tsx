@@ -26,6 +26,8 @@ import LinkMagicPage from "@/pages/link-magic";
 import BrandPage from "@/pages/brand";
 import StatusPage from "@/pages/status";
 import BildungPage from "@/pages/bildung";
+import AgentenPage from "@/pages/agenten";
+import KampagnenPage from "@/pages/kampagnen";
 import NotFound from "@/pages/not-found";
 
 function AppRouter() {
@@ -52,6 +54,8 @@ function AppRouter() {
       "/brand": "Marke & Strategie — Brand Management | RealSync Dynamics",
       "/status": "Live Status Dashboard — Plattform-Transparenz | RealSync Dynamics",
       "/bildung": "RealSync Bildung — Bundeslandübergreifende Schul- & Bildungsplattform | RealSync Dynamics",
+      "/agenten": "Screenshot-Agenten — Kostenlose Plattform-Skalierung | RealSync Dynamics",
+      "/kampagnen": "Werbekampagnen & Automatisierung — 0€ Skalierung | RealSync Dynamics",
     };
     document.title = titles[location] || "RealSync Dynamics";
   }, [location]);
@@ -78,6 +82,8 @@ function AppRouter() {
         <Route path="/brand" component={BrandPage} />
         <Route path="/status" component={StatusPage} />
         <Route path="/bildung" component={BildungPage} />
+        <Route path="/agenten" component={AgentenPage} />
+        <Route path="/kampagnen" component={KampagnenPage} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

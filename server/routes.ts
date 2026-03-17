@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { createHash, randomUUID } from "crypto";
 import { storage } from "./storage";
 import { aiRouter } from "./ai-router";
+import { insertScreenshotSchema, insertCampaignSchema, insertAutomationRuleSchema } from "@shared/schema";
 
 async function requireAuth(req: Request, res: Response): Promise<{ id: string; username: string; plan: string | null; displayName: string | null; bio: string | null; email: string | null; socialLinks: string | null; createdAt: string | null } | null> {
   const authHeader = req.headers.authorization;
@@ -776,6 +777,251 @@ Wenn du etwas nicht weißt, leite den Nutzer an support@realsyncdynamics.de weit
       priority: priority ?? "medium",
     });
     res.status(201).json(task);
+  });
+
+  // ═══════════════════════════════════════════════════════
+  // ═══════ SCREENSHOT-AGENTEN & GROWTH SYSTEM ═══════════
+  // ═══════════════════════════════════════════════════════
+
+  // Create screenshot submission
+  app.post("/api/screenshots", async (req, res) => {
+    const parsed = insertScreenshotSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Ungültige Eingabedaten", details: parsed.error.issues });
+    }
+    const data = parsed.data;
+
+    // DSGVO: consent is mandatory
+    if (!data.consentGiven || !data.dataProcessingAgreed) {
+      return res.status(400).json({ error: "DSGVO-Einwilligung und Datenverarbeitungszustimmung sind erforderlich" });
+    }
+
+    const screenshot = await storage.createScreenshot(data);
+
+    // Mock KI analysis
+    const mockAiAnalysis = {
+      detectedIssues: ["UI-Element Überlappung erkannt", "Kontrast zu niedrig im Header"],
+      suggestions: ["Button-Abstand vergrößern", "Schriftgröße auf mobilen Geräten anpassen"],
+      confidence: 0.87,
+      processingTime: "1.2s",
+    };
+    const priorities = ["critical", "high", "medium", "low"];
+    const aiCategories = ["ui-bug", "feature-gap", "ux-improvement", "performance", "design"];
+
+    const aiPriority = priorities[Math.floor(Math.random() * priorities.length)];
+    const aiCategory = aiCategories[Math.floor(Math.random() * aiCategories.length)];
+
+    const updatedScreenshot = await storage.updateScreenshot(screenshot.id, {
+      aiAnalysis: JSON.stringify(mockAiAnalysis),
+      aiPriority,
+      aiCategory,
+      aiSuggestion: mockAiAnalysis.suggestions[0],
+      status: "analysiert",
+      pointsAwarded: 10,
+    });
+
+    // DSGVO log
+    await storage.createDsgvoLog({
+      action: "upload",
+      userId: null,
+      screenshotId: screenshot.id,
+      details: `Screenshot eingereicht: ${data.category} — ${data.appTarget || "allgemein"}`,
+      ipHash: createHash("sha256").update(req.ip || "unknown").digest("hex").slice(0, 16),
+    });
+
+    // Update growth rewards
+    await storage.createOrUpdateGrowthReward({
+      userName: data.userName,
+      userEmail: data.userEmail ?? "anonym@realsync.de",
+      totalPoints: 10,
+      screenshotsSubmitted: 1,
+    });
+
+    res.status(201).json({
+      screenshot: updatedScreenshot,
+      aiAnalysis: mockAiAnalysis,
+      aiPriority,
+      aiCategory,
+      pointsAwarded: 10,
+      message: "Screenshot erfolgreich eingereicht und KI-Analyse gestartet",
+    });
+  });
+
+  // List screenshots
+  app.get("/api/screenshots", async (req, res) => {
+    const category = req.query.category as string | undefined;
+    const status = req.query.status as string | undefined;
+    const screenshots = await storage.getScreenshots({ category, status });
+    res.json(screenshots);
+  });
+
+  // Get single screenshot
+  app.get("/api/screenshots/:id", async (req, res) => {
+    const screenshot = await storage.getScreenshot(req.params.id);
+    if (!screenshot) {
+      return res.status(404).json({ error: "Screenshot nicht gefunden" });
+    }
+    res.json(screenshot);
+  });
+
+  // Upvote screenshot
+  app.post("/api/screenshots/:id/upvote", async (req, res) => {
+    const screenshot = await storage.upvoteScreenshot(req.params.id);
+    if (!screenshot) {
+      return res.status(404).json({ error: "Screenshot nicht gefunden" });
+    }
+    res.json(screenshot);
+  });
+
+  // Leaderboard
+  app.get("/api/growth-rewards/leaderboard", async (req, res) => {
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+    const leaderboard = await storage.getLeaderboard(limit);
+    res.json(leaderboard);
+  });
+
+  // Growth stats
+  app.get("/api/growth-rewards/stats", async (req, res) => {
+    const stats = await storage.getGrowthStats();
+    res.json(stats);
+  });
+
+  // Get reward for current user by email
+  app.get("/api/growth-rewards/me", async (req, res) => {
+    const email = req.query.email as string;
+    if (!email) {
+      return res.status(400).json({ error: "E-Mail-Parameter ist erforderlich" });
+    }
+    const reward = await storage.getGrowthReward(email);
+    if (!reward) {
+      return res.status(404).json({ error: "Keine Belohnungsdaten für diese E-Mail gefunden" });
+    }
+    res.json(reward);
+  });
+
+  // ═══════════════════════════════════════════════════════
+  // ═══════ WERBEKAMPAGNEN & AUTOMATISIERUNG ══════════════
+  // ═══════════════════════════════════════════════════════
+
+  // List campaigns
+  app.get("/api/campaigns", async (req, res) => {
+    const status = req.query.status as string | undefined;
+    const platform = req.query.platform as string | undefined;
+    const campaigns = await storage.getCampaigns({ status, platform });
+    res.json(campaigns);
+  });
+
+  // Campaign stats — MUST be before :id route
+  app.get("/api/campaigns/stats", async (req, res) => {
+    const stats = await storage.getCampaignStats();
+    res.json(stats);
+  });
+
+  // Get single campaign
+  app.get("/api/campaigns/:id", async (req, res) => {
+    const campaign = await storage.getCampaign(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ error: "Kampagne nicht gefunden" });
+    }
+    res.json(campaign);
+  });
+
+  // Create campaign
+  app.post("/api/campaigns", async (req, res) => {
+    const parsed = insertCampaignSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Ungültige Kampagnendaten", details: parsed.error.issues });
+    }
+    const campaign = await storage.createCampaign(parsed.data);
+    res.status(201).json(campaign);
+  });
+
+  // Update campaign
+  app.patch("/api/campaigns/:id", async (req, res) => {
+    const campaign = await storage.getCampaign(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ error: "Kampagne nicht gefunden" });
+    }
+    const updated = await storage.updateCampaign(req.params.id, req.body);
+    res.json(updated);
+  });
+
+  // Delete campaign
+  app.delete("/api/campaigns/:id", async (req, res) => {
+    const deleted = await storage.deleteCampaign(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: "Kampagne nicht gefunden" });
+    }
+    res.json({ success: true, message: "Kampagne gelöscht" });
+  });
+
+  // List automation rules for a campaign
+  app.get("/api/campaigns/:id/rules", async (req, res) => {
+    const campaign = await storage.getCampaign(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ error: "Kampagne nicht gefunden" });
+    }
+    const rules = await storage.getAutomationRules(req.params.id);
+    res.json(rules);
+  });
+
+  // Create automation rule for a campaign
+  app.post("/api/campaigns/:id/rules", async (req, res) => {
+    const campaign = await storage.getCampaign(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ error: "Kampagne nicht gefunden" });
+    }
+    const parsed = insertAutomationRuleSchema.safeParse({ ...req.body, campaignId: req.params.id });
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Ungültige Regeldaten", details: parsed.error.issues });
+    }
+    const rule = await storage.createAutomationRule(parsed.data);
+    res.status(201).json(rule);
+  });
+
+  // Update automation rule
+  app.patch("/api/automation-rules/:id", async (req, res) => {
+    const updated = await storage.updateAutomationRule(req.params.id, req.body);
+    if (!updated) {
+      return res.status(404).json({ error: "Automatisierungsregel nicht gefunden" });
+    }
+    res.json(updated);
+  });
+
+  // Delete automation rule
+  app.delete("/api/automation-rules/:id", async (req, res) => {
+    const deleted = await storage.deleteAutomationRule(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: "Automatisierungsregel nicht gefunden" });
+    }
+    res.json({ success: true, message: "Automatisierungsregel gelöscht" });
+  });
+
+  // AI-optimize a campaign
+  app.post("/api/campaigns/:id/ai-optimize", async (req, res) => {
+    const campaign = await storage.getCampaign(req.params.id);
+    if (!campaign) {
+      return res.status(404).json({ error: "Kampagne nicht gefunden" });
+    }
+    const suggestions = {
+      headline: "Optimierte Überschrift: " + (campaign.headline || campaign.name),
+      timing: "Beste Posting-Zeit: Di/Do 10:00-12:00 CET",
+      audience: "Erweiterte Zielgruppe: +15% Tech-Interessierte empfohlen",
+      budget: "Budget-Empfehlung: Erhöhung um 20% für optimale Reichweite",
+      abTest: {
+        variantA: campaign.headline || campaign.name,
+        variantB: "Alternative: " + campaign.name + " — Jetzt entdecken!",
+      },
+    };
+    const updated = await storage.updateCampaign(req.params.id, {
+      aiOptimized: true,
+      aiSuggestions: JSON.stringify(suggestions),
+    });
+    res.json({
+      campaign: updated,
+      suggestions,
+      message: "KI-Optimierung erfolgreich durchgeführt",
+    });
   });
 
   return httpServer;
